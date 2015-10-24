@@ -5,9 +5,9 @@ import "fmt"
 import "os"
 
 func loadAnimals(f *Farm) {
-  for c := true; c == true; c:= askContinue() {
-    var animal Animal
-    fmt.Print("Species [0 - Dog, 1 - Cat, 2 - Cow]: ")
+  for c := true; c == true; c = askContinue() {
+    animal := new(Animal)
+    fmt.Print("Species [1 - Dog, 2 - Cat, 3 - Cow]: ")
     fmt.Scanf("%d", &animal.Species)
     fmt.Print("Name: ")
     fmt.Scanf("%s", &animal.Name)

@@ -1,7 +1,18 @@
 package main
 
 import "fmt"
-import "errors"
+
+type AnimalValidationError struct {
+  Messages []string
+}
+
+func (e *AnimalValidationError) AddMessage(msg string) {
+  e.Messages = append(e.Messages, msg)
+}
+
+func (e *AnimalValidationError) Error() string {
+  return fmt.Sprint(e.Messages)
+}
 
 type Species int
 const (
@@ -35,30 +46,30 @@ func (s Species) String() string {
   }
 }
 
-func (a Animal) IsValid() (error, bool) {
-  var msg string
-  if a.Species < Dog && a.Species > Cow { // WAT xD
-    msg = "Species is invalid"
+func (a *Animal) IsValid() (error, bool) {
+  validation := new(AnimalValidationError)
+  if a.Species < 1 || a.Species > 3 {
+    validation.AddMessage("Species is invalid")
   }
   if a.Name == "" {
-    msg = "Name is invalid"
+    validation.AddMessage("Name is invalid")
   }
   if a.Age < 0 {
-    msg = "Age is invalid"
+    validation.AddMessage("Age is invalid")
   }
-  if msg != "" {
-    return errors.New(msg), false
+  if len(validation.Messages) > 0 {
+    return validation, false
   } else {
     return nil, true
   }
 }
 
-func (f *Farm) AddAnimal(animal Animal) error {
+func (f *Farm) AddAnimal(animal *Animal) error {
   e, _ := animal.IsValid()
   if e != nil {
     return e
   } else {
-    f.Animals = append(f.Animals, &animal)
+    f.Animals = append(f.Animals, animal)
     return nil
   }
 }

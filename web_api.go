@@ -1,7 +1,6 @@
 package main
 
 import "encoding/json"
-import "fmt"
 import "log"
 import "net/http"
 
@@ -19,12 +18,12 @@ func (f *FarmAPI) CreateAnimal(w http.ResponseWriter, req *http.Request) {
   dec := json.NewDecoder(req.Body)
   animal := new(Animal)
   if jsonErr := dec.Decode(animal); jsonErr == nil {
-    fmt.Printf("%+v", animal)
-    if farmErr := f.Farm.AddAnimal(*animal); farmErr == nil {
+    if farmErr := f.Farm.AddAnimal(animal); farmErr == nil {
       w.WriteHeader(http.StatusCreated)
     } else {
-      log.Printf("%+v", farmErr)
       w.WriteHeader(http.StatusBadRequest)
+      enc := json.NewEncoder(w)
+      enc.Encode(farmErr)
     }
   } else {
     log.Printf("%+v", jsonErr)
@@ -39,11 +38,13 @@ func (f *FarmAPI) GetAnimals(w http.ResponseWriter, req *http.Request) {
 
 func (f *FarmAPI) Router() func(http.ResponseWriter, *http.Request) {
   return func(w http.ResponseWriter, req *http.Request) {
-    log.Printf("%#v", req) // happy print debugging :)
+    // log.Printf("%#v", req) // happy print debugging :)
     switch req.Method {
     case "POST":
+      log.Println("POST /animals")
       f.CreateAnimal(w, req)
     case "GET":
+      log.Println("GET /animals")
       f.GetAnimals(w, req)
     }
   }

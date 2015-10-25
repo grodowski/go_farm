@@ -4,57 +4,45 @@ import "encoding/json"
 import "log"
 import "net/http"
 
-type FarmAPI struct {
+type FarmAPIController struct {
   Farm *Farm
 }
 
-func NewFarmAPI() *FarmAPI {
-  f := new(FarmAPI)
-  f.Farm = new(Farm)
-  return f
+func NewFarmAPIController() *FarmAPIController {
+  return &FarmAPIController{new(Farm)}
 }
 
-func (f *FarmAPI) CreateAnimal(w http.ResponseWriter, req *http.Request) {
+func (f *FarmAPIController) index(w http.ResponseWriter, req *http.Request) error {
+  return json.NewEncoder(w).Encode(f.Farm.Animals)
+}
+
+func (f *FarmAPIController) create(r http.ResponseWriter, req *http.Request) error {
   dec := json.NewDecoder(req.Body)
   animal := new(Animal)
-  if jsonErr := dec.Decode(animal); jsonErr == nil {
-    if farmErr := f.Farm.AddAnimal(animal); farmErr == nil {
-      w.WriteHeader(http.StatusCreated)
-    } else {
-      w.WriteHeader(http.StatusBadRequest)
-      enc := json.NewEncoder(w)
-      enc.Encode(farmErr)
-    }
-  } else {
-    log.Printf("%+v", jsonErr)
-    w.WriteHeader(http.StatusBadRequest)
+  if jsonErr := dec.Decode(animal); jsonErr != nil {
+    return jsonErr
   }
+  if farmErr := f.Farm.AddAnimal(animal); farmErr != nil {
+    return farmErr
+  }
+  return nil
 }
 
-func (f *FarmAPI) GetAnimals(w http.ResponseWriter, req *http.Request) {
-  enc := json.NewEncoder(w)
-  enc.Encode(f.Farm.Animals)
-}
-
-func (f *FarmAPI) Router() func(http.ResponseWriter, *http.Request) {
-  return func(w http.ResponseWriter, req *http.Request) {
-    // log.Printf("%#v", req) // happy print debugging :)
-    switch req.Method {
+func (f *FarmAPIController) routes() safeRequestHandler {
+  return func (w http.ResponseWriter, r *http.Request) {
+    switch r.Method {
     case "POST":
-      log.Println("POST /animals")
-      f.CreateAnimal(w, req)
+      handleErrors(f.create)(w, r)
     case "GET":
-      log.Println("GET /animals")
-      f.GetAnimals(w, req)
+      handleErrors(f.index)(w, r)
+    default:
+      http.Error(w, "No Route Found", http.StatusNotFound)
     }
   }
 }
 
 func main() {
-  api := NewFarmAPI()
-  http.HandleFunc("/animals", api.Router())
-  err := http.ListenAndServe(":3003", nil)
-  if err != nil {
-    log.Fatalln("ListenAndServe: ", err)
-  }
+  api := NewFarmAPIController()
+  http.HandleFunc("/animals", api.routes())
+  log.Fatalf("Error starting server: %v", http.ListenAndServe(":3003", nil))
 }

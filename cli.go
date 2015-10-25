@@ -5,7 +5,7 @@ import "fmt"
 import "os"
 
 func loadAnimals(f *Farm) {
-  for c := true; c == true; c = askContinue() {
+  for c := true; c; c = askContinue() {
     animal := new(Animal)
     fmt.Print("Species [1 - Dog, 2 - Cat, 3 - Cow]: ")
     fmt.Scanf("%d", &animal.Species)
@@ -29,12 +29,15 @@ func askContinue() bool {
 }
 
 func writeJSON(farm *Farm, filename string) {
-  file, _ := os.Create(filename)
-  defer func() {
-    file.Close()
-  }()
-  enc := json.NewEncoder(file)
-  enc.Encode(farm)
+  file, fileErr := os.Create(filename)
+  if fileErr != nil {
+    fmt.Println("Filesystem Error", fileErr)
+    return
+  }
+  defer file.Close()
+  if jsonErr := json.NewEncoder(file).Encode(farm); jsonErr != nil {
+    fmt.Println("JSON Error", jsonErr)
+  }
 }
 
 func main() {

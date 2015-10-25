@@ -14,9 +14,30 @@ func (e *AnimalValidationError) Error() string {
   return fmt.Sprint(e.Messages)
 }
 
+type AnimalValidator struct {
+  Animal *Animal
+}
+
+func (av *AnimalValidator) IsValid() error {
+  error := new(AnimalValidationError)
+  if av.Animal.Species < 1 || av.Animal.Species > 3 {
+    error.AddMessage("Species is invalid")
+  }
+  if av.Animal.Name == "" {
+    error.AddMessage("Name is invalid")
+  }
+  if av.Animal.Age < 0 {
+    error.AddMessage("Age is invalid")
+  }
+  if len(error.Messages) > 0 {
+    return error
+  }
+  return nil
+}
+
 type Species int
 const (
-  Dog Species = iota
+  Dog Species = iota + 1
   Cat
   Cow
 )
@@ -37,49 +58,17 @@ var speciesNames = map[Species]string{
   Cow: "Cow",
 }
 
-func (s Species) String() string {
-  n, ok := speciesNames[s]
-  if ok {
-    return n
-  } else {
-    return "Unknown"
-  }
-}
-
-func (a *Animal) IsValid() (error, bool) {
-  validation := new(AnimalValidationError)
-  if a.Species < 1 || a.Species > 3 {
-    validation.AddMessage("Species is invalid")
-  }
-  if a.Name == "" {
-    validation.AddMessage("Name is invalid")
-  }
-  if a.Age < 0 {
-    validation.AddMessage("Age is invalid")
-  }
-  if len(validation.Messages) > 0 {
-    return validation, false
-  } else {
-    return nil, true
-  }
+func (a *Animal) String() string {
+  speciesName, _ := speciesNames[a.Species]
+  return fmt.Sprintf("%s %s %d", speciesName, a.Name, a.Age)
 }
 
 func (f *Farm) AddAnimal(animal *Animal) error {
-  e, _ := animal.IsValid()
-  if e != nil {
-    return e
-  } else {
-    f.Animals = append(f.Animals, animal)
-    return nil
+  validator := &AnimalValidator{animal}
+  if err := validator.IsValid(); err != nil {
+    return err
   }
-}
-
-func (f *Farm) String() string {
-  str := "Farm Summary\n"
-  for index, element := range f.Animals {
-    str += fmt.Sprintf("%d[Animal Species:%s, Name:%s, Age:%d]\n", index,
-      element.Species.String(), element.Name, element.Age)
-  }
-  return str
+  f.Animals = append(f.Animals, animal)
+  return nil
 }
 

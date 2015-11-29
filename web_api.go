@@ -8,8 +8,8 @@ type FarmAPIController struct {
   Farm *Farm
 }
 
-func NewFarmAPIController() *FarmAPIController {
-  return &FarmAPIController{new(Farm)}
+func NewFarmAPIController(farm *Farm) *FarmAPIController {
+  return &FarmAPIController{farm}
 }
 
 func (f *FarmAPIController) index(w http.ResponseWriter, req *http.Request) error {
@@ -43,7 +43,12 @@ func (f *FarmAPIController) routes() safeRequestHandler {
 }
 
 func main() {
-  api := NewFarmAPIController()
-  http.HandleFunc("/animals", api.routes())
+  farm := new(Farm)
+  http.HandleFunc("/animals", NewFarmAPIController(farm).routes())
+  baconApi, err := NewBaconAPIController(farm)
+  if err != nil {
+    log.Fatalf("Not enough bacon!") // hide error ;)
+  }
+  http.HandleFunc("/baconize", baconApi.routes())
   log.Fatalf("Error starting server: %v", http.ListenAndServe(":3003", nil))
 }

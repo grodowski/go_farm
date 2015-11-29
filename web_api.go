@@ -29,12 +29,13 @@ func (f *FarmAPIController) create(r http.ResponseWriter, req *http.Request) err
 }
 
 func (f *FarmAPIController) routes() safeRequestHandler {
-  return func (w http.ResponseWriter, r *http.Request) {
-    switch r.Method {
+  return func (w http.ResponseWriter, req *http.Request) {
+    res := &loggedResponse{ResponseWriter: w, status: 200}
+    switch req.Method {
     case "POST":
-      handleErrors(f.create)(w, r)
+      logRequest(handleErrors(f.create))(res, req)
     case "GET":
-      handleErrors(f.index)(w, r)
+      logRequest(handleErrors(f.index))(res, req)
     default:
       http.Error(w, "No Route Found", http.StatusNotFound)
     }
